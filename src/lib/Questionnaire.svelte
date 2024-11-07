@@ -1,12 +1,9 @@
 <script lang="ts">
+	import type { Preferences } from '$lib';
 	import { createEventDispatcher } from 'svelte';
 	const dispatch = createEventDispatcher();
 
-	let answers = {
-		preference: '',
-		pace: '',
-		groupSize: ''
-	};
+	export let preferences: Preferences;
 
 	function finishQuiz() {
 		dispatch('finishQuiz');
@@ -20,42 +17,42 @@
 		<div class="d-flex flex-row my-1">
 			<button
 				class="flex-fill btn btn-primary m-2"
-				on:click={() => (answers.preference = 'mountain')}>Mountain</button
+				on:click={() => (preferences.preference = 'mountain')}>Mountain</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (answers.preference = 'beach')}
+			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.preference = 'beach')}
 				>Beach</button
 			>
 		</div>
 	</div>
 
 	<!-- Question 2 (conditionally shown, space reserved) -->
-	<div class="question-card card p-3" style:opacity={answers.preference ? 1 : 0}>
+	<div class="question-card card p-3" style:opacity={preferences.preference ? 1 : 0}>
 		<h2>Do you like a fast or relaxed pace?</h2>
 		<div class="d-flex flex-row my-1">
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (answers.pace = 'fast')}
+			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.pace = 'fast')}
 				>Fast</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (answers.pace = 'relaxed')}
+			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.pace = 'relaxed')}
 				>Relaxed</button
 			>
 		</div>
 	</div>
 
 	<!-- Question 3 (conditionally shown, space reserved) -->
-	<div class="question-card card p-3" style:opacity={answers.pace ? 1 : 0}>
+	<div class="question-card card p-3" style:opacity={preferences.pace ? 1 : 0}>
 		<h2>Are you traveling solo or in a group?</h2>
 		<div class="d-flex flex-row my-1">
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (answers.groupSize = 'solo')}
+			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.groupSize = 'solo')}
 				>Solo</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (answers.groupSize = 'group')}
+			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.groupSize = 'group')}
 				>Group</button
 			>
 		</div>
 	</div>
 
 	<!-- Final button (conditionally shown) -->
-	<div class="question-card card p-3" style:opacity={answers.groupSize ? 1 : 0}>
+	<div class="question-card card p-3" style:opacity={preferences.groupSize ? 1 : 0}>
 		<button class="btn btn-success mt-3" on:click={finishQuiz}>See Recommendations</button>
 	</div>
 </div>

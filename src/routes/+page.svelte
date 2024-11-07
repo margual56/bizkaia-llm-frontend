@@ -1,8 +1,14 @@
-<script>
+<script lang="ts">
+	import type { Preferences } from '$lib';
 	import Chatbot from '$lib/Chatbot.svelte';
 	import Questionnaire from '$lib/Questionnaire.svelte';
 
 	let showChatbot = false;
+	let preferences: Preferences = {
+		preference: '',
+		pace: '',
+		groupSize: ''
+	};
 
 	function handleFinishQuiz() {
 		showChatbot = true;
@@ -14,11 +20,11 @@
 
 	<section class="my-auto">
 		{#if !showChatbot}
-			<Questionnaire on:finishQuiz={handleFinishQuiz} />
+			<Questionnaire on:finishQuiz={handleFinishQuiz} bind:preferences  />
 		{/if}
 
 		{#if showChatbot}
-			<Chatbot />
+			<Chatbot bind:preferences />
 		{/if}
 	</section>
 </main>
