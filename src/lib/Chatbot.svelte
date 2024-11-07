@@ -192,6 +192,7 @@
 
 	export let preferences: Preferences;
 
+	let loadingMessage = false;
 	let userMessage = '';
 	let partialMessage = '';
 	let messages: { content: string; role: string }[] = [
@@ -226,6 +227,7 @@
 
 	async function sendMessage() {
 		if (userMessage.trim() !== '') {
+			loadingMessage = true;
 			// Add user's message to the chat
 			messages = [...messages, { content: userMessage, role: 'user' }];
 
@@ -257,6 +259,8 @@
 					while (true) {
 						const { done, value } = await reader.read();
 						if (done) break;
+
+						loadingMessage = false;
 
 						// Decode and parse each chunk
 						let response = decoder.decode(value, { stream: true });
@@ -295,6 +299,8 @@
 				assistantMessage.content = "Oops! Couldn't reach the server.";
 				messages = [...messages];
 			}
+
+			loadingMessage = false;
 		}
 	}
 </script>
@@ -311,6 +317,12 @@
 	{#if partialMessage}
 		<div class="message assistant">
 			{@html marked(partialMessage)}
+		</div>
+	{/if}
+
+	{#if loadingMessage}
+		<div class="message assistant">
+			<div class="loader"></div>
 		</div>
 	{/if}
 </div>
@@ -345,6 +357,7 @@
 		padding: 0.5rem;
 		border-radius: 15px;
 		max-width: 70%;
+		min-width: 60px;
 	}
 
 	.user {
@@ -357,5 +370,39 @@
 		background-color: #e9ecef;
 		color: #343a40;
 		align-self: flex-start;
+	}
+
+	.loader {
+		width: 10px;
+		aspect-ratio: 1;
+		border-radius: 50%;
+		animation: l5 1s infinite linear alternate;
+		margin-left: 15px;
+	}
+	@keyframes l5 {
+		0% {
+			box-shadow:
+				15px 0 #3a3a3a,
+				-15px 0 #3a3a3a20;
+			background: #3a3a3a;
+		}
+		33% {
+			box-shadow:
+				15px 0 #3a3a3a,
+				-15px 0 #3a3a3a20;
+			background: #3a3a3a20;
+		}
+		66% {
+			box-shadow:
+				15px 0 #3a3a3a20,
+				-15px 0 #3a3a3a;
+			background: #3a3a3a20;
+		}
+		100% {
+			box-shadow:
+				15px 0 #3a3a3a20,
+				-15px 0 #3a3a3a;
+			background: #3a3a3a;
+		}
 	}
 </style>

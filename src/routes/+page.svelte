@@ -20,7 +20,7 @@
 
 	<section class="my-auto">
 		{#if !showChatbot}
-			<Questionnaire on:finishQuiz={handleFinishQuiz} bind:preferences  />
+			<Questionnaire on:finishQuiz={handleFinishQuiz} bind:preferences />
 		{/if}
 
 		{#if showChatbot}
@@ -56,4 +56,5 @@
 			transform: translateY(0);
 		}
 	}
+	
 </style>
