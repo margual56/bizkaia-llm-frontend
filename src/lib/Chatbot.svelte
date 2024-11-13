@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { Preferences } from '$lib';
+	import { env } from '$env/dynamic/private';
 	import { marked } from 'marked';
 	import { onMount } from 'svelte';
 
@@ -239,17 +240,18 @@
 
 			try {
 				// Call Ollama API with streaming
-				const response = await fetch(
-					'https://shiny-waddle-646gjpqp7c5rvv-11434.app.github.dev/api/chat',
-					{
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							model: 'llama3.2', // Replace with the model you're using
-							messages: messages
-						})
-					}
-				);
+				const response = await fetch('/api/chat', {
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: 'Bearer ' + env.LLAMA_API_KEY
+					},
+					body: JSON.stringify({
+						model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
+						stream: true,
+						messages: messages
+					})
+				});
 
 				if (response.ok && response.body) {
 					const reader = response.body.getReader();
