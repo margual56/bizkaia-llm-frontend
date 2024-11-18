@@ -66,6 +66,7 @@ export async function POST({ request }: { request: Request }) {
 
 								controller.enqueue(new TextEncoder().encode(chunkData));
 								console.log('Enqueued chunk:', chunkData); // Log enqueued data
+								console.info('Message: ', partialMessage);
 							}
 						} catch (e) {
 							console.error('Error parsing JSON chunk:', e);
