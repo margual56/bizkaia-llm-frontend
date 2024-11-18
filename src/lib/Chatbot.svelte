@@ -221,8 +221,6 @@
 		sendMessage();
 	});
 
-	const controller: AbortController = new AbortController();
-
 	async function sendMessage() {
 		if (userMessage.trim() !== '') {
 			loadingMessage = true;
@@ -233,8 +231,7 @@
 				const response = await fetch('/api/chat', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ messages: messages }),
-					signal: controller.signal
+					body: JSON.stringify({ messages: messages })
 				});
 
 				loadingMessage = false;
@@ -300,7 +297,7 @@
 		on:keyup={(e) => e.key === 'Enter' && sendMessage()}
 	/>
 
-	{#if partialMessage}
+	<!--{#if partialMessage}
 		<button
 			class="btn btn-danger stop"
 			on:click={() => {
@@ -329,15 +326,16 @@
 				/>
 			</svg></button
 		>
-	{:else}
-		<button class="btn btn-primary" on:click={sendMessage}>Send</button>
-	{/if}
+   	{:else}-->
+	<button class="btn btn-primary" on:click={sendMessage}>Send</button>
+	<!--{/if}-->
 </div>
 
 <style>
 	button.stop {
 		display: flex;
 		justify-content: center;
+		align-items: center;
 
 		font-size: 1.3em;
 
