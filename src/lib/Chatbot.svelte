@@ -221,8 +221,6 @@
 		sendMessage();
 	});
 
-	const controller: AbortController = new AbortController();
-
 	async function sendMessage() {
 		if (userMessage.trim() !== '') {
 			loadingMessage = true;
@@ -233,8 +231,7 @@
 				const response = await fetch('/api/chat', {
 					method: 'POST',
 					headers: { 'Content-Type': 'application/json' },
-					body: JSON.stringify({ messages: messages }),
-					signal: controller.signal
+					body: JSON.stringify({ messages: messages })
 				});
 
 				loadingMessage = false;
@@ -282,7 +279,25 @@
 		<div class="message assistant">
 			{@html marked(partialMessage)}
 		</div>
+	{/if}
 
+	{#if loadingMessage}
+		<div class="message assistant">
+			<div class="loader"></div>
+		</div>
+	{/if}
+</div>
+
+<div class="input-group mt-3">
+	<input
+		type="text"
+		bind:value={userMessage}
+		placeholder="Ask me anything"
+		class="form-control"
+		on:keyup={(e) => e.key === 'Enter' && sendMessage()}
+	/>
+
+	<!--{#if partialMessage}
 		<button
 			class="btn btn-danger stop"
 			on:click={() => {
@@ -311,34 +326,16 @@
 				/>
 			</svg></button
 		>
-	{/if}
-
-	{#if loadingMessage}
-		<div class="message assistant">
-			<div class="loader"></div>
-		</div>
-	{/if}
-</div>
-
-<div class="input-group mt-3">
-	<input
-		type="text"
-		bind:value={userMessage}
-		placeholder="Ask me anything"
-		class="form-control"
-		on:keyup={(e) => e.key === 'Enter' && sendMessage()}
-	/>
+   	{:else}-->
 	<button class="btn btn-primary" on:click={sendMessage}>Send</button>
+	<!--{/if}-->
 </div>
 
 <style>
 	button.stop {
 		display: flex;
 		justify-content: center;
-
-		position: absolute;
-		bottom: 1rem;
-		right: 1rem;
+		align-items: center;
 
 		font-size: 1.3em;
 
@@ -351,8 +348,6 @@
 	}
 
 	.chatbox {
-		position: relative;
-
 		width: 100%;
 		max-width: 90vw;
 		height: 60vh;
