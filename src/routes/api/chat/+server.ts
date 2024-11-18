@@ -1,59 +1,101 @@
-import { LLAMA_API_URL, LLAMA_API_KEY } from '$env/static/private';
-import type { RequestHandler } from '@sveltejs/kit';
+import { OLLAMA_URL, OLLAMA_TOKEN, OLLAMA_MODEL } from '$env/static/private';
 
-export const POST: RequestHandler = async ({ request }) => {
-	// Parse incoming data from client
-	const { userMessage, messages } = await request.json();
+export async function POST({ request }: { request: Request }) {
+	const { messages } = await request.json();
 
-	if (!userMessage.trim()) {
-		return new Response('Empty message', { status: 400 });
-	}
+	// Prepare headers for the request to Ollama API
+	const headers = new Headers();
+	headers.append('Content-Type', 'application/json');
+
+	if (OLLAMA_TOKEN) headers.append('Authorization', OLLAMA_TOKEN);
 
 	try {
-		// Start the request to the external API with streaming enabled
-		const response = await fetch(LLAMA_API_URL, {
+		// Initiate a streaming request to the Ollama API
+		const response = await fetch(OLLAMA_URL, {
 			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json',
-				Authorization: `Bearer ${LLAMA_API_KEY}`
-			},
+			headers,
 			body: JSON.stringify({
-				model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
 				stream: true,
-				messages: [...messages, { content: userMessage, role: 'user' }]
+				model: OLLAMA_MODEL,
+				messages
 			})
 		});
 
-		// Check if the response supports streaming
-		// Create a readable stream to handle and pass data chunks as they arrive
+		// Check if the response is OK and has a readable stream
+		if (!response.ok || !response.body) {
+			return new Response(JSON.stringify({ error: 'Failed to fetch from Ollama' }), {
+				status: 500
+			});
+		}
+
+		const reader = response.body.getReader();
+		const decoder = new TextDecoder('utf-8');
+
+		// Create a ReadableStream to send data back to the client
 		const stream = new ReadableStream({
 			async start(controller) {
-				if (!response || !response.body) {
-					return new Response('Stream not supported', { status: 500 });
-				}
+				let partialMessage = '';
 
-				const reader = response.body.getReader();
-
-				// Read data from the response body in chunks
+				// Stream the data in chunks
 				while (true) {
 					const { done, value } = await reader.read();
 					if (done) break;
 
-					// Pass each chunk to the client
-					controller.enqueue(value);
+					// Decode and process each chunk
+					const responseChunk = decoder.decode(value, { stream: true });
+					const parts = responseChunk.split('\n').filter(Boolean);
+
+					// Parse each JSON object in the chunk
+					for (const part of parts) {
+						try {
+							const json = JSON.parse(part);
+
+							if (json.message && json.message.content) {
+								// Append the chunk to the assistant message
+								partialMessage += json.message.content;
+
+								controller.enqueue(
+									new TextEncoder().encode(
+										JSON.stringify({
+											chunk: json,
+											finalMessage: partialMessage
+										}) + '\n'
+									)
+								);
+							}
+						} catch (e) {
+							console.error('Error parsing JSON chunk:', e);
+						}
+					}
 				}
+
+				// End the stream with the final assistant message
+				controller.enqueue(
+					new TextEncoder().encode(
+						JSON.stringify({
+							chunk: null,
+							finalMessage: partialMessage
+						}) + '\n'
+					)
+				);
 
 				// Close the stream
 				controller.close();
 			}
 		});
 
-		// Return the streaming response to the client
+		// Return the stream as a response to the client
 		return new Response(stream, {
-			headers: { 'Content-Type': 'application/json' }
+			headers: {
+				'Content-Type': 'application/json',
+				'Cache-Control': 'no-cache',
+				'Transfer-Encoding': 'chunked'
+			}
 		});
 	} catch (error) {
-		console.error('Error in sendMessage:', error);
-		return new Response('Internal server error', { status: 500 });
+		console.error('Error fetching from Ollama:', error);
+		return new Response(JSON.stringify({ error: "Couldn't reach the server" }), {
+			status: 500
+		});
 	}
-};
+}

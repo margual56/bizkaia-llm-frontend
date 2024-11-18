@@ -1,6 +1,5 @@
 <script lang="ts">
 	import type { Preferences } from '$lib';
-	import { env } from '$env/dynamic/private';
 	import { marked } from 'marked';
 	import { onMount } from 'svelte';
 
@@ -229,80 +228,44 @@
 	async function sendMessage() {
 		if (userMessage.trim() !== '') {
 			loadingMessage = true;
-			// Add user's message to the chat
-			messages = [...messages, { content: userMessage, role: 'user' }];
-
-			// Clear the input
+			messages = [...messages, { content: userMessage.trim(), role: 'user' }];
 			userMessage = '';
 
-			// Placeholder for assistant's response
-			let assistantMessage = { content: '', role: 'assistant' };
-
 			try {
-				// Call Ollama API with streaming
 				const response = await fetch('/api/chat', {
 					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-						Authorization: 'Bearer ' + env.LLAMA_API_KEY
-					},
-					body: JSON.stringify({
-						model: 'meta-llama/Meta-Llama-3.1-70B-Instruct',
-						stream: true,
-						messages: messages
-					})
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ messages: messages })
 				});
+
+				loadingMessage = false;
 
 				if (response.ok && response.body) {
 					const reader = response.body.getReader();
 					const decoder = new TextDecoder('utf-8');
 
-					// Process the stream
 					while (true) {
 						const { done, value } = await reader.read();
 						if (done) break;
 
-						loadingMessage = false;
+						const message = decoder.decode(value);
+						const json = JSON.parse(message);
 
-						// Decode and parse each chunk
-						let response = decoder.decode(value, { stream: true });
-						const parts = response.split('\n').filter(Boolean);
+						partialMessage = json.finalMessage;
 
-						// Append each complete JSON response
-						for (const part of parts) {
-							try {
-								const json = JSON.parse(part);
+						console.debug('Partial message: ', partialMessage);
 
-								if (json.message && json.message.content) {
-									partialMessage += json.message.content;
-
-									assistantMessage.content = partialMessage;
-									messages = [...messages]; // Trigger reactivity
-								}
-							} catch (e) {
-								console.error('Error parsing JSON chunk:', e);
-							}
-						}
+						messages = [...messages]; // Trigger reactivity
 					}
 
-					// Append the finished partialMessage to the message list
-					assistantMessage.content = partialMessage;
-					messages = [...messages, assistantMessage];
-
-					// Clear the partialMessage for the next message
+					messages = [...messages, { content: partialMessage, role: 'assistant' }];
 					partialMessage = '';
 				} else {
-					console.error('Failed to fetch from Ollama:', response.statusText);
-					assistantMessage.content = 'Oops! Something went wrong with the server.';
-					messages = [...messages];
+					console.error('Error in response:', response.statusText);
 				}
 			} catch (error) {
-				console.error('Error fetching from Ollama:', error);
-				assistantMessage.content = "Oops! Couldn't reach the server.";
-				messages = [...messages];
+				console.error('Error sending message:', error);
 			}
-
-			loadingMessage = false;
 		}
 	}
 </script>

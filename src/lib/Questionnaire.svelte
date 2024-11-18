@@ -19,8 +19,9 @@
 				class="flex-fill btn btn-primary m-2"
 				on:click={() => (preferences.preference = 'mountain')}>Mountain</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.preference = 'beach')}
-				>Beach</button
+			<button
+				class="flex-fill btn btn-primary m-2"
+				on:click={() => (preferences.preference = 'beach')}>Beach</button
 			>
 		</div>
 	</div>
@@ -42,11 +43,13 @@
 	<div class="question-card card p-3" style:opacity={preferences.pace ? 1 : 0}>
 		<h2>Are you traveling solo or in a group?</h2>
 		<div class="d-flex flex-row my-1">
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.groupSize = 'solo')}
-				>Solo</button
+			<button
+				class="flex-fill btn btn-primary m-2"
+				on:click={() => (preferences.groupSize = 'solo')}>Solo</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.groupSize = 'group')}
-				>Group</button
+			<button
+				class="flex-fill btn btn-primary m-2"
+				on:click={() => (preferences.groupSize = 'group')}>Group</button
 			>
 		</div>
 	</div>
