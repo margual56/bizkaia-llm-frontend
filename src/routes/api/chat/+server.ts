@@ -94,6 +94,7 @@ export async function POST({ request }: { request: Request }) {
 		});
 	} catch (error) {
 		console.error('Error fetching from Ollama:', error);
+
 		return new Response(JSON.stringify({ error: "Couldn't reach the server" }), {
 			status: 500
 		});
