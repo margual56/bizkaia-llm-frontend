@@ -1,59 +1,95 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { Preferences } from '$lib';
-	import { createEventDispatcher } from 'svelte';
-	const dispatch = createEventDispatcher();
 
-	export let preferences: Preferences;
+	let question1Answer1 = $state(false);
+	let question1Answer2 = $state(false);
 
-	function finishQuiz() {
-		dispatch('finishQuiz');
-	}
+	let question2Answer1 = $state(false);
+	let question2Answer2 = $state(false);
+
+	let question3Answer1 = $state(false);
+	let question3Answer2 = $state(false);
+
+	let {
+		finishQuiz,
+		preferences = $bindable()
+	}: { finishQuiz: () => void; preferences: Preferences } = $props();
 </script>
 
 <div class="container text-center">
 	<!-- Question 1 -->
 	<div class="question-card card p-3" style:opacity={1}>
-		<h2>Do you prefer mountain or beach destinations?</h2>
+		<h2>{$t('questionnaire.question1')}</h2>
 		<div class="d-flex flex-row my-1">
 			<button
+				disabled={!question1Answer1 !== !question1Answer2 && !question1Answer1}
 				class="flex-fill btn btn-primary m-2"
-				on:click={() => (preferences.preference = 'mountain')}>Mountain</button
+				onclick={() => {
+					question1Answer1 = true;
+					preferences.preference = $t('questionnaire.question1.answer1.value');
+				}}>{$t('questionnaire.question1.answer1.text')}</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.preference = 'beach')}
-				>Beach</button
+			<button
+				disabled={!question1Answer1 !== !question1Answer2 && !question1Answer2}
+				class="flex-fill btn btn-primary m-2"
+				onclick={() => {
+					question1Answer2 = true;
+					preferences.preference = $t('questionnaire.question1.answer2.value');
+				}}>{$t('questionnaire.question1.answer2.text')}</button
 			>
 		</div>
 	</div>
 
 	<!-- Question 2 (conditionally shown, space reserved) -->
 	<div class="question-card card p-3" style:opacity={preferences.preference ? 1 : 0}>
-		<h2>Do you like a fast or relaxed pace?</h2>
+		<h2>{$t('questionnaire.question2')}</h2>
 		<div class="d-flex flex-row my-1">
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.pace = 'fast')}
-				>Fast</button
+			<button
+				disabled={!question2Answer1 !== !question2Answer2 && !question2Answer1}
+				class="flex-fill btn btn-primary m-2"
+				onclick={() => {
+					question2Answer1 = true;
+					preferences.pace = $t('questionnaire.question2.answer1.value');
+				}}>{$t('questionnaire.question2.answer1.text')}</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.pace = 'relaxed')}
-				>Relaxed</button
+			<button
+				disabled={!question2Answer1 !== !question2Answer2 && !question2Answer2}
+				class="flex-fill btn btn-primary m-2"
+				onclick={() => {
+					question2Answer2 = true;
+					preferences.pace = $t('questionnaire.question2.answer2.value');
+				}}>{$t('questionnaire.question2.answer2.text')}</button
 			>
 		</div>
 	</div>
 
 	<!-- Question 3 (conditionally shown, space reserved) -->
 	<div class="question-card card p-3" style:opacity={preferences.pace ? 1 : 0}>
-		<h2>Are you traveling solo or in a group?</h2>
+		<h2>{$t('questionnaire.question3')}</h2>
 		<div class="d-flex flex-row my-1">
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.groupSize = 'solo')}
-				>Solo</button
+			<button
+				disabled={!question3Answer1 !== !question3Answer2 && !question3Answer1}
+				class="flex-fill btn btn-primary m-2"
+				onclick={() => {
+					question3Answer1 = true;
+					preferences.groupSize = $t('questionnaire.question3.answer1.value');
+				}}>{$t('questionnaire.question3.answer1.text')}</button
 			>
-			<button class="flex-fill btn btn-primary m-2" on:click={() => (preferences.groupSize = 'group')}
-				>Group</button
+			<button
+				disabled={!question3Answer1 !== !question3Answer2 && !question3Answer2}
+				class="flex-fill btn btn-primary m-2"
+				onclick={() => {
+					question3Answer2 = true;
+					preferences.groupSize = $t('questionnaire.question3.answer2.value');
+				}}>{$t('questionnaire.question3.answer2.text')}</button
 			>
 		</div>
 	</div>
 
 	<!-- Final button (conditionally shown) -->
 	<div class="question-card card p-3" style:opacity={preferences.groupSize ? 1 : 0}>
-		<button class="btn btn-success mt-3" on:click={finishQuiz}>See Recommendations</button>
+		<button class="btn btn-success mt-3" onclick={finishQuiz}>{$t('questionnaire.results')}</button>
 	</div>
 </div>
 

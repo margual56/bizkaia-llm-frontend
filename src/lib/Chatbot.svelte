@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { t } from '$lib/i18n';
 	import type { Preferences } from '$lib';
 	import { marked } from 'marked';
 	import { onMount } from 'svelte';
@@ -198,8 +199,7 @@
 	let messages: { content: string; role: string }[] = [
 		{
 			role: 'system',
-			content:
-				"You are a helpful agent helping people find the best tourist destinations in Bizkaia for them. Here's a list of attractions:"
+			content: $t('chat.initial.systemPrompt')
 		}
 	];
 
@@ -213,94 +213,58 @@
 	);
 
 	onMount(() => {
-		userMessage =
-			'Can you recommend some tourist destinations in Bizkaia? When I travel, I prefer to go to the ' +
-			preferences.preference +
-			', I prefer a ' +
-			preferences.pace +
-			' pace' +
-			' and I prefer to travel ' +
-			preferences.groupSize +
-			'. Based on that, what tourist destinations in Bizkaia do you recommend?';
+		userMessage = $t('chat.initial.userMessage', {
+			preference: preferences.preference,
+			pace: preferences.pace,
+			groupSize: preferences.groupSize
+		});
 		sendMessage();
 	});
+
+	const controller: AbortController = new AbortController();
 
 	async function sendMessage() {
 		if (userMessage.trim() !== '') {
 			loadingMessage = true;
-			// Add user's message to the chat
-			messages = [...messages, { content: userMessage, role: 'user' }];
-
-			// Clear the input
+			messages = [...messages, { content: userMessage.trim(), role: 'user' }];
 			userMessage = '';
 
-			// Placeholder for assistant's response
-			let assistantMessage = { content: '', role: 'assistant' };
-
 			try {
-				// Call Ollama API with streaming
-				const response = await fetch(
-					'https://shiny-waddle-646gjpqp7c5rvv-11434.app.github.dev/api/chat',
-					{
-						method: 'POST',
-						headers: { 'Content-Type': 'application/json' },
-						body: JSON.stringify({
-							model: 'llama3.2', // Replace with the model you're using
-							messages: messages
-						})
-					}
-				);
+				const response = await fetch('/api/chat', {
+					method: 'POST',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ messages: messages }),
+					signal: controller.signal
+				});
+
+				loadingMessage = false;
 
 				if (response.ok && response.body) {
 					const reader = response.body.getReader();
 					const decoder = new TextDecoder('utf-8');
 
-					// Process the stream
 					while (true) {
 						const { done, value } = await reader.read();
 						if (done) break;
 
-						loadingMessage = false;
+						const message = decoder.decode(value);
+						const json = JSON.parse(message);
 
-						// Decode and parse each chunk
-						let response = decoder.decode(value, { stream: true });
-						const parts = response.split('\n').filter(Boolean);
+						partialMessage = json.finalMessage;
 
-						// Append each complete JSON response
-						for (const part of parts) {
-							try {
-								const json = JSON.parse(part);
+						console.debug('Partial message: ', partialMessage);
 
-								if (json.message && json.message.content) {
-									partialMessage += json.message.content;
-
-									assistantMessage.content = partialMessage;
-									messages = [...messages]; // Trigger reactivity
-								}
-							} catch (e) {
-								console.error('Error parsing JSON chunk:', e);
-							}
-						}
+						messages = [...messages]; // Trigger reactivity
 					}
 
-					// Append the finished partialMessage to the message list
-					assistantMessage.content = partialMessage;
-					messages = [...messages, assistantMessage];
-
-					// Clear the partialMessage for the next message
+					messages = [...messages, { content: partialMessage, role: 'assistant' }];
 					partialMessage = '';
 				} else {
-					console.error('Failed to fetch from Ollama:', response.statusText);
-					assistantMessage.content = 'Oops! Something went wrong with the server.';
-					messages = [...messages];
+					console.error('Error in response:', response.statusText);
 				}
 			} catch (error) {
-				console.error('Error fetching from Ollama:', error);
-				assistantMessage.content = "Oops! Couldn't reach the server.";
-				messages = [...messages];
+				console.error('Error sending message:', error);
 			}
-
-			loadingMessage = false;
 		}
 	}
 </script>
@@ -318,6 +282,35 @@
 		<div class="message assistant">
 			{@html marked(partialMessage)}
 		</div>
+
+		<button
+			class="btn btn-danger stop"
+			on:click={() => {
+				controller.abort();
+
+				if (partialMessage !== '') {
+					messages = [...messages, { content: partialMessage, role: 'assistant' }];
+				}
+
+				partialMessage = '';
+				loadingMessage = false;
+			}}
+			aria-label="Stop generating"
+		>
+			<svg
+				xmlns="http://www.w3.org/2000/svg"
+				width="16"
+				height="16"
+				fill="currentColor"
+				class="bi bi-stop-circle"
+				viewBox="0 0 16 16"
+			>
+				<path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14m0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16" />
+				<path
+					d="M5 6.5A1.5 1.5 0 0 1 6.5 5h3A1.5 1.5 0 0 1 11 6.5v3A1.5 1.5 0 0 1 9.5 11h-3A1.5 1.5 0 0 1 5 9.5z"
+				/>
+			</svg></button
+		>
 	{/if}
 
 	{#if loadingMessage}
@@ -339,7 +332,27 @@
 </div>
 
 <style>
+	button.stop {
+		display: flex;
+		justify-content: center;
+
+		position: absolute;
+		bottom: 1rem;
+		right: 1rem;
+
+		font-size: 1.3em;
+
+		padding: 5px;
+	}
+
+	button.stop svg {
+		width: 1.5rem;
+		height: 1.5rem;
+	}
+
 	.chatbox {
+		position: relative;
+
 		width: 100%;
 		max-width: 90vw;
 		height: 60vh;
