@@ -45,6 +45,12 @@ export async function POST({ request }: { request: Request }) {
 					for (const part of parts) {
 						const text = part.startsWith('data: ') ? part.slice(6) : part;
 
+						if (text === '[DONE]') {
+							console.log("Received '[DONE]' message from Ollama.");
+							controller.close();
+							return;
+						}
+
 						try {
 							const json = JSON.parse(text);
 							console.log('Parsed JSON chunk:', json); // Log parsed chunk
