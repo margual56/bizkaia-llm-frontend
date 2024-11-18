@@ -55,19 +55,48 @@ export async function POST({ request }: { request: Request }) {
 							const json = JSON.parse(text);
 							console.log('Parsed JSON chunk:', json); // Log parsed chunk
 
-							if (json.message && json.message.content) {
-								partialMessage += json.message.content;
-
-								const chunkData =
-									JSON.stringify({
-										chunk: json,
-										finalMessage: partialMessage
-									}) + '\n';
-
-								controller.enqueue(new TextEncoder().encode(chunkData));
-								console.log('Enqueued chunk:', chunkData); // Log enqueued data
-								console.info('Message: ', partialMessage);
+							if (OLLAMA_URL.includes('localhost')) {
+								if (json.message && json.message.content) {
+									partialMessage += json.message.content;
+								} else {
+									continue;
+								}
+							} else {
+								/*
+							{
+							"id": "chatcmpl-RgHnW6IPJdtP8TTzFq5oTowk",
+							"object": "chat.completion.chunk",
+							"created": 1731947121,
+							"model": "meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo",
+							"choices": [
+							   {
+										"index": 0,
+										"delta": {
+										  "role": "assistant",
+											"content": "ib",
+											"tool_calls": null
+										},
+										"finish_reason": null
+									}
+								],
+							"usage": null
 							}
+						 */
+								if (json.choices && json.choices.length > 0 && json.choices[0].delta.content) {
+									partialMessage += json.choices[0].delta.content;
+								} else {
+									continue;
+								}
+							}
+
+							const chunkData =
+								JSON.stringify({
+									finalMessage: partialMessage
+								}) + '\n';
+
+							controller.enqueue(new TextEncoder().encode(chunkData));
+							console.log('Enqueued chunk:', chunkData); // Log enqueued data
+							console.info('Message: ', partialMessage);
 						} catch (e) {
 							console.error('Error parsing JSON chunk:', e);
 							controller.error(e);
