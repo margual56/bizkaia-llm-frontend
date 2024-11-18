@@ -6,6 +6,9 @@ export async function POST({ request }: { request: Request }) {
 	// Prepare headers for the request to Ollama API
 	const headers = new Headers();
 	headers.append('Content-Type', 'application/json');
+	headers.append('Cache-Control', 'no-cache');
+	headers.append('Transfer-Encoding', 'chunked');
+	headers.append('Connection', 'keep-alive');
 
 	if (OLLAMA_TOKEN) headers.append('Authorization', OLLAMA_TOKEN);
 
@@ -47,8 +50,14 @@ export async function POST({ request }: { request: Request }) {
 
 					// Parse each JSON object in the chunk
 					for (const part of parts) {
+						let text = part;
+
+						if (part.startsWith('data: ')) {
+							text = part.replace(/^data: /, '');
+						}
+
 						try {
-							const json = JSON.parse(part);
+							const json = JSON.parse(text);
 
 							if (json.message && json.message.content) {
 								// Append the chunk to the assistant message
