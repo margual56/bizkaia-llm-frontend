@@ -57,6 +57,7 @@ export async function POST({ request }: { request: Request }) {
 						}
 
 						try {
+							console.log('Chunk:', text);
 							const json = JSON.parse(text);
 
 							if (json.message && json.message.content) {
