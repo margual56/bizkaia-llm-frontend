@@ -10,8 +10,9 @@ export async function POST({ request }: { request: Request }) {
 
 	if (OLLAMA_TOKEN) headers.append('Authorization', 'Bearer ' + OLLAMA_TOKEN);
 
+	let response;
 	try {
-		const response = await fetch(OLLAMA_URL, {
+		response = await fetch(OLLAMA_URL, {
 			method: 'POST',
 			headers,
 			body: JSON.stringify({
@@ -20,49 +21,53 @@ export async function POST({ request }: { request: Request }) {
 				messages
 			})
 		});
+	} catch (error) {
+		console.error('Error fetching from Ollama:', error);
+		return new Response(JSON.stringify({ error: "Couldn't reach the server" }), {
+			status: 500
+		});
+	}
 
-		if (!response.ok || !response.body) {
-			return new Response(JSON.stringify({ error: 'Failed to fetch from Ollama' }), {
-				status: 500
-			});
-		}
+	if (!response.ok || !response.body) {
+		return new Response(JSON.stringify({ error: 'Failed to fetch from Ollama' }), {
+			status: 500
+		});
+	}
 
-		const reader = response.body.getReader();
-		const decoder = new TextDecoder('utf-8');
+	const reader = response.body.getReader();
+	const decoder = new TextDecoder('utf-8');
 
-		const stream = new ReadableStream({
-			async start(controller) {
-				let partialMessage = '';
+	const stream = new ReadableStream({
+		async start(controller) {
+			let partialMessage = '';
 
-				while (true) {
-					const { done, value } = await reader.read();
-					if (done) break;
+			while (true) {
+				const { done, value } = await reader.read();
+				if (done) break;
 
-					const responseChunk = decoder.decode(value, { stream: true });
-					// console.log('Raw chunk from Ollama:', responseChunk); // Log raw chunk
+				const responseChunk = decoder.decode(value, { stream: true });
 
-					const parts = responseChunk.split('\n').filter(Boolean);
-					for (const part of parts) {
-						const text = part.startsWith('data: ') ? part.slice(6) : part;
+				const parts = responseChunk.split('\n').filter(Boolean);
+				for (const part of parts) {
+					const text = part.startsWith('data: ') ? part.slice(6) : part;
+					console.log('Raw chunk from Ollama:', responseChunk); // Log raw chunk
 
-						if (text === '[DONE]') {
-							console.log("Received '[DONE]' message from Ollama.");
-							controller.close();
-							return;
-						}
+					if (text === '[DONE]') {
+						console.log("Received '[DONE]' message from Ollama.");
+						controller.close();
+						return;
+					}
 
-						let json;
-						try {
-							json = JSON.parse(text);
-							// console.log('Parsed JSON chunk:', json); // Log parsed chunk
-						} catch (e) {
-							console.error('Error parsing JSON chunk:', e);
-							controller.error(e);
-							continue;
-						}
+					let json;
+					try {
+						json = JSON.parse(text);
+					} catch (e) {
+						console.error('Error parsing JSON chunk:', e);
+						continue;
+					}
 
-						if (OLLAMA_URL.includes('.com')) {
-							/*
+					if (OLLAMA_URL.includes('.com')) {
+						/*
 							{
 							"id": "chatcmpl-RgHnW6IPJdtP8TTzFq5oTowk",
 							"object": "chat.completion.chunk",
@@ -82,57 +87,47 @@ export async function POST({ request }: { request: Request }) {
 							"usage": null
 							}
 						 */
-							if (json.choices && json.choices.length > 0 && json.choices[0].delta.content) {
-								partialMessage += json.choices[0].delta.content;
-							} else {
-								continue;
-							}
+						if (json.choices && json.choices.length > 0 && json.choices[0].delta.content) {
+							partialMessage += json.choices[0].delta.content;
 						} else {
-							if (json.message && json.message.content) {
-								partialMessage += json.message.content;
-							} else {
-								continue;
-							}
+							continue;
 						}
-						const chunkData =
-							JSON.stringify({
-								finalMessage: partialMessage
-							}) + '\n';
-
-						try {
-							controller.enqueue(new TextEncoder().encode(chunkData));
-							// console.log('Enqueued chunk:', chunkData); // Log enqueued data
-							// console.info('Message: ', partialMessage);
-						} catch (error) {
-							console.error('Error enqueuing chunk:', error);
-							controller.error(error);
+					} else {
+						if (json.message && json.message.content) {
+							partialMessage += json.message.content;
+						} else {
+							continue;
 						}
 					}
+					const chunkData = JSON.stringify({
+						finalMessage: partialMessage
+					});
+
+					try {
+						controller.enqueue(new TextEncoder().encode(chunkData));
+					} catch (error) {
+						console.error('Error enqueuing chunk:', error);
+						continue;
+					}
 				}
-
-				controller.enqueue(
-					new TextEncoder().encode(
-						JSON.stringify({
-							chunk: null,
-							finalMessage: partialMessage
-						}) + '\n'
-					)
-				);
-				controller.close();
 			}
-		});
 
-		return new Response(stream, {
-			headers: {
-				'Content-Type': 'application/json',
-				'Cache-Control': 'no-cache',
-				'Transfer-Encoding': 'chunked'
-			}
-		});
-	} catch (error) {
-		console.error('Error fetching from Ollama:', error);
-		return new Response(JSON.stringify({ error: "Couldn't reach the server" }), {
-			status: 500
-		});
-	}
+			controller.enqueue(
+				new TextEncoder().encode(
+					JSON.stringify({
+						finalMessage: partialMessage
+					})
+				)
+			);
+			controller.close();
+		}
+	});
+
+	return new Response(stream, {
+		headers: {
+			'Content-Type': 'application/json',
+			'Cache-Control': 'no-cache',
+			'Transfer-Encoding': 'chunked'
+		}
+	});
 }

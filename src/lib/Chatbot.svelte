@@ -75,8 +75,8 @@
 							// console.debug('Partial message: ', partialMessage);
 
 							messages = [...messages]; // Trigger reactivity
-						} catch (error) {
-							console.error('Error parsing JSON:', error);
+						} catch {
+							continue;
 						}
 					}
 
