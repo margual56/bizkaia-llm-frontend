@@ -3,6 +3,9 @@
 	import type { Preferences } from '$lib';
 	import Chatbot from '$lib/Chatbot.svelte';
 	import Questionnaire from '$lib/Questionnaire.svelte';
+	import type { PageData } from './$types';
+
+	export let data: PageData;
 
 	let showChatbot = false;
 	let preferences: Preferences = {
@@ -28,13 +31,13 @@
 	</select>
 	<h1 class="my-5">{$t('homepage.title')}</h1>
 
-	<section class="my-auto">
-		{#if !showChatbot}
-			<Questionnaire finishQuiz={handleFinishQuiz} bind:preferences />
-		{:else}
-			<Chatbot bind:preferences />
-		{/if}
-	</section>
+	{#if !showChatbot}
+		<Questionnaire finishQuiz={handleFinishQuiz} bind:preferences />
+	{:else}
+		<section class="chatbox-container">
+			<Chatbot {preferences} pathways={data.pathways!} culturalAgenda={data.culturalAgenda!} />
+		</section>
+	{/if}
 </main>
 
 <style>
@@ -70,5 +73,19 @@
 			opacity: 1;
 			transform: translateY(0);
 		}
+	}
+	.chatbox-container {
+		max-width: min(95vw, 850px);
+		width: 100%;
+
+		height: 80vh;
+
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+
+		margin: auto 1rem;
+
+		padding-bottom: 1rem;
 	}
 </style>

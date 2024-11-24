@@ -8,7 +8,7 @@ export async function POST({ request }: { request: Request }) {
 	headers.append('Cache-Control', 'no-cache');
 	headers.append('Connection', 'keep-alive');
 
-	if (OLLAMA_TOKEN) headers.append('Authorization', OLLAMA_TOKEN);
+	if (OLLAMA_TOKEN) headers.append('Authorization', 'Bearer ' + OLLAMA_TOKEN);
 
 	try {
 		const response = await fetch(OLLAMA_URL, {
@@ -39,7 +39,7 @@ export async function POST({ request }: { request: Request }) {
 					if (done) break;
 
 					const responseChunk = decoder.decode(value, { stream: true });
-					console.log('Raw chunk from Ollama:', responseChunk); // Log raw chunk
+					// console.log('Raw chunk from Ollama:', responseChunk); // Log raw chunk
 
 					const parts = responseChunk.split('\n').filter(Boolean);
 					for (const part of parts) {
@@ -51,18 +51,18 @@ export async function POST({ request }: { request: Request }) {
 							return;
 						}
 
+						let json;
 						try {
-							const json = JSON.parse(text);
-							console.log('Parsed JSON chunk:', json); // Log parsed chunk
+							json = JSON.parse(text);
+							// console.log('Parsed JSON chunk:', json); // Log parsed chunk
+						} catch (e) {
+							console.error('Error parsing JSON chunk:', e);
+							controller.error(e);
+							continue;
+						}
 
-							if (OLLAMA_URL.includes('localhost')) {
-								if (json.message && json.message.content) {
-									partialMessage += json.message.content;
-								} else {
-									continue;
-								}
-							} else {
-								/*
+						if (OLLAMA_URL.includes('.com')) {
+							/*
 							{
 							"id": "chatcmpl-RgHnW6IPJdtP8TTzFq5oTowk",
 							"object": "chat.completion.chunk",
@@ -82,24 +82,30 @@ export async function POST({ request }: { request: Request }) {
 							"usage": null
 							}
 						 */
-								if (json.choices && json.choices.length > 0 && json.choices[0].delta.content) {
-									partialMessage += json.choices[0].delta.content;
-								} else {
-									continue;
-								}
+							if (json.choices && json.choices.length > 0 && json.choices[0].delta.content) {
+								partialMessage += json.choices[0].delta.content;
+							} else {
+								continue;
 							}
+						} else {
+							if (json.message && json.message.content) {
+								partialMessage += json.message.content;
+							} else {
+								continue;
+							}
+						}
+						const chunkData =
+							JSON.stringify({
+								finalMessage: partialMessage
+							}) + '\n';
 
-							const chunkData =
-								JSON.stringify({
-									finalMessage: partialMessage
-								}) + '\n';
-
+						try {
 							controller.enqueue(new TextEncoder().encode(chunkData));
-							console.log('Enqueued chunk:', chunkData); // Log enqueued data
-							console.info('Message: ', partialMessage);
-						} catch (e) {
-							console.error('Error parsing JSON chunk:', e);
-							controller.error(e);
+							// console.log('Enqueued chunk:', chunkData); // Log enqueued data
+							// console.info('Message: ', partialMessage);
+						} catch (error) {
+							console.error('Error enqueuing chunk:', error);
+							controller.error(error);
 						}
 					}
 				}
