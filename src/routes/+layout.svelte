@@ -2,6 +2,12 @@
 	import { t, locale, locales } from '$lib/i18n';
 	import storage from '$lib/store';
 	import type { Locales } from '$lib/translations';
+	import { injectAnalytics } from '@vercel/analytics/sveltekit';
+	import { injectSpeedInsights } from '@vercel/speed-insights/sveltekit';
+
+	injectSpeedInsights();
+	injectAnalytics();
+
 	let { children } = $props();
 	export const lang_sub = storage<{ lang: Locales }>('lang', { lang: 'es' });
 </script>
