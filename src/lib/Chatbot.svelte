@@ -67,28 +67,34 @@
 					body: JSON.stringify({ messages: messages })
 				});
 
-				loadingMessage = false;
-
 				if (response.ok && response.body) {
 					const reader = response.body.getReader();
 					const decoder = new TextDecoder('utf-8');
+
+					loadingMessage = false;
 
 					while (true) {
 						const { done, value } = await reader.read();
 						if (done) break;
 
-						const message = decoder.decode(value);
+						const recv_messages = decoder.decode(value).split('\n');
 
-						try {
-							const json = JSON.parse(message);
+						if (recv_messages.length > 1) {
+							console.debug('Received ', recv_messages);
+						}
 
-							partialMessage = json.finalMessage;
+						for (const message of recv_messages) {
+							try {
+								const json = JSON.parse(message);
 
-							// console.debug('Partial message: ', partialMessage);
+								partialMessage = json.finalMessage;
 
-							messages = [...messages]; // Trigger reactivity
-						} catch {
-							continue;
+								// console.debug('Partial message: ', partialMessage);
+
+								messages = [...messages]; // Trigger reactivity
+							} catch {
+								continue;
+							}
 						}
 					}
 
@@ -100,6 +106,7 @@
 			} catch (error) {
 				console.error('Error sending message:', error);
 			}
+			loadingMessage = false;
 		}
 	}
 </script>
