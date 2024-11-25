@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
-	import type { Preferences } from '$lib';
+	import { GroupSizeType, PaceType, PreferenceType, type Preferences } from '$lib';
 
 	let question1Answer1 = $state(false);
 	let question1Answer2 = $state(false);
@@ -27,7 +27,7 @@
 				class="flex-fill btn btn-primary m-2"
 				onclick={() => {
 					question1Answer1 = true;
-					preferences.preference = $t('questionnaire.question1.answer1.value');
+					preferences.preference = PreferenceType.mountain;
 				}}>{$t('questionnaire.question1.answer1.text')}</button
 			>
 			<button
@@ -35,14 +35,14 @@
 				class="flex-fill btn btn-primary m-2"
 				onclick={() => {
 					question1Answer2 = true;
-					preferences.preference = $t('questionnaire.question1.answer2.value');
+					preferences.preference = PreferenceType.beach;
 				}}>{$t('questionnaire.question1.answer2.text')}</button
 			>
 		</div>
 	</div>
 
 	<!-- Question 2 (conditionally shown, space reserved) -->
-	<div class="question-card card p-3" style:opacity={preferences.preference ? 1 : 0}>
+	<div class="question-card card p-3" data-active={question1Answer1 || question1Answer2}>
 		<h2>{$t('questionnaire.question2')}</h2>
 		<div class="d-flex flex-row my-1">
 			<button
@@ -50,7 +50,7 @@
 				class="flex-fill btn btn-primary m-2"
 				onclick={() => {
 					question2Answer1 = true;
-					preferences.pace = $t('questionnaire.question2.answer1.value');
+					preferences.pace = PaceType.slow;
 				}}>{$t('questionnaire.question2.answer1.text')}</button
 			>
 			<button
@@ -58,14 +58,14 @@
 				class="flex-fill btn btn-primary m-2"
 				onclick={() => {
 					question2Answer2 = true;
-					preferences.pace = $t('questionnaire.question2.answer2.value');
+					preferences.pace = PaceType.fast;
 				}}>{$t('questionnaire.question2.answer2.text')}</button
 			>
 		</div>
 	</div>
 
 	<!-- Question 3 (conditionally shown, space reserved) -->
-	<div class="question-card card p-3" style:opacity={preferences.pace ? 1 : 0}>
+	<div class="question-card card p-3" data-active={question2Answer1 || question2Answer2}>
 		<h2>{$t('questionnaire.question3')}</h2>
 		<div class="d-flex flex-row my-1">
 			<button
@@ -73,7 +73,7 @@
 				class="flex-fill btn btn-primary m-2"
 				onclick={() => {
 					question3Answer1 = true;
-					preferences.groupSize = $t('questionnaire.question3.answer1.value');
+					preferences.groupSize = GroupSizeType.solo;
 				}}>{$t('questionnaire.question3.answer1.text')}</button
 			>
 			<button
@@ -81,14 +81,14 @@
 				class="flex-fill btn btn-primary m-2"
 				onclick={() => {
 					question3Answer2 = true;
-					preferences.groupSize = $t('questionnaire.question3.answer2.value');
+					preferences.groupSize = GroupSizeType.group;
 				}}>{$t('questionnaire.question3.answer2.text')}</button
 			>
 		</div>
 	</div>
 
 	<!-- Final button (conditionally shown) -->
-	<div class="question-card card p-3" style:opacity={preferences.groupSize ? 1 : 0}>
+	<div class="question-card card p-3" data-active={question3Answer1 || question3Answer2}>
 		<button class="btn btn-success mt-3" onclick={finishQuiz}>{$t('questionnaire.results')}</button>
 	</div>
 </div>
@@ -98,12 +98,23 @@
 		/* Reserve space for each question card */
 		height: fit-content; /* Adjust as needed for consistent layout */
 		margin-bottom: 1rem;
-		transition: opacity 0.5s ease-in-out; /* Smooth fade in/out */
+		transition: opacity 0.5s fadeInDown; /* Smooth fade in/out */
 		opacity: 0; /* Start hidden for animations */
 	}
 
 	/* Only reveal cards with content */
-	.question-card[style*='opacity: 1'] {
+	:global(.question-card[data-active='true']) {
 		opacity: 1;
+	}
+
+	@keyframes fadeInDown {
+		0% {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		100% {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 </style>

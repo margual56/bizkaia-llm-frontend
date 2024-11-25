@@ -1,7 +1,11 @@
 import { derived, writable } from 'svelte/store';
 import translations, { type Locales } from './translations.js';
+import storage from './store';
 
+export const lang_sub = storage<{ lang: Locales }>('lang', { lang: 'es' });
 export const locale = writable<Locales>('eu');
+lang_sub.subscribe((lang) => locale.set(lang.lang));
+
 export const locales = Object.keys(translations) as Locales[];
 
 function translate(locale: Locales, key: string, vars?: Record<string, string>) {

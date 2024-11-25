@@ -55,12 +55,6 @@ export const load: PageServerLoad = async () => {
 			.then((data) => data.records.map((pathway: SenderoRouteRaw) => parseSenderoRoute(pathway)));
 		pathwaysCacheTimestamp = now; // Update cache timestamp
 	}
-
-	// Log cached data (optional)
-	console.log('Cultural Agenda:', culturalAgendaCache);
-	console.log('Pathways:', pathwaysCache);
-
-	// Return cached data
 	return {
 		pathways: pathwaysCache,
 		culturalAgenda: culturalAgendaCache

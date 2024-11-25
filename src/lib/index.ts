@@ -1,7 +1,22 @@
+export enum PreferenceType {
+	mountain = 0,
+	beach = 1
+}
+
+export enum PaceType {
+	fast = 0,
+	slow = 1
+}
+
+export enum GroupSizeType {
+	solo = 0,
+	group = 1
+}
+
 export type Preferences = {
-	preference: string;
-	pace: string;
-	groupSize: string;
+	preference: PreferenceType;
+	pace: PaceType;
+	groupSize: GroupSizeType;
 };
 
 export type SenderoRouteRaw = {

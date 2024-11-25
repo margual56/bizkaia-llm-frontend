@@ -50,7 +50,7 @@ export async function POST({ request }: { request: Request }) {
 				const parts = responseChunk.split('\n').filter(Boolean);
 				for (const part of parts) {
 					const text = part.startsWith('data: ') ? part.slice(6) : part;
-					console.log('Raw chunk from Ollama:', responseChunk); // Log raw chunk
+					// console.log('Raw chunk from Ollama:', responseChunk); // Log raw chunk
 
 					if (text === '[DONE]') {
 						console.log("Received '[DONE]' message from Ollama.");

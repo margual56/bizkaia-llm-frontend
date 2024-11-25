@@ -7,11 +7,13 @@
 	let {
 		preferences,
 		pathways,
-		culturalAgenda
+		culturalAgenda,
+		chatbox = $bindable()
 	}: {
 		preferences: Preferences;
 		pathways: SenderoRoute[];
 		culturalAgenda: CulturalEvent[];
+		chatbox?: HTMLDivElement;
 	} = $props();
 
 	let loadingMessage = $state(false);
@@ -25,6 +27,16 @@
 	]);
 
 	onMount(async () => {
+		console.log(
+			'preference: ',
+			$t(`questionnaire.question1.answer${preferences.preference + 1}.value`)
+		);
+		console.log('pace: ', $t(`questionnaire.question2.answer${preferences.pace + 1}.value`));
+		console.log(
+			'groupSize: ',
+			$t(`questionnaire.question3.answer${preferences.groupSize + 1}.value`)
+		);
+
 		messages.push({
 			role: 'system',
 			content:
@@ -35,9 +47,9 @@
 		});
 
 		userMessage = $t('chat.initial.userMessage', {
-			preference: preferences.preference,
-			pace: preferences.pace,
-			groupSize: preferences.groupSize
+			preference: $t(`questionnaire.question1.answer${preferences.preference + 1}.value`),
+			pace: $t(`questionnaire.question2.answer${preferences.pace + 1}.value`),
+			groupSize: $t(`questionnaire.question3.answer${preferences.groupSize + 1}.value`)
 		});
 		sendMessage();
 	});
@@ -92,46 +104,63 @@
 	}
 </script>
 
-<div class="chatbox">
-	{#each messages as { content, role }}
-		{#if role !== 'system'}
-			<div class="message {role}">
-				{@html marked(content)}
+<section class="chatbox-container">
+	<div class="chatbox" bind:this={chatbox}>
+		{#each messages as { content, role }}
+			{#if role !== 'system'}
+				<div class="message {role}">
+					{@html marked(content)}
+				</div>
+			{/if}
+		{/each}
+
+		{#if partialMessage}
+			<div class="message assistant">
+				{@html marked(partialMessage)}
 			</div>
 		{/if}
-	{/each}
 
-	{#if partialMessage}
-		<div class="message assistant">
-			{@html marked(partialMessage)}
-		</div>
-	{/if}
+		{#if loadingMessage}
+			<div class="message assistant">
+				<div class="loader"></div>
+			</div>
+		{/if}
+	</div>
 
-	{#if loadingMessage}
-		<div class="message assistant">
-			<div class="loader"></div>
-		</div>
-	{/if}
-</div>
+	<div class="input-group mt-3">
+		<input
+			type="text"
+			bind:value={userMessage}
+			placeholder="Ask me anything"
+			class="form-control"
+			onkeyup={(e) =>
+				e.key === 'Enter' && !(loadingMessage || partialMessage.trim() !== '') && sendMessage()}
+		/>
 
-<div class="input-group mt-3">
-	<input
-		type="text"
-		bind:value={userMessage}
-		placeholder="Ask me anything"
-		class="form-control"
-		onkeyup={(e) =>
-			e.key === 'Enter' && !(loadingMessage || partialMessage.trim() !== '') && sendMessage()}
-	/>
-
-	<button
-		class="btn btn-primary"
-		onclick={sendMessage}
-		disabled={loadingMessage || partialMessage.trim() !== ''}>Send</button
-	>
-</div>
+		<button
+			class="btn btn-primary"
+			onclick={sendMessage}
+			disabled={loadingMessage || partialMessage.trim() !== ''}>Send</button
+		>
+	</div>
+</section>
 
 <style>
+	.chatbox-container {
+		max-width: min(95vw, 850px);
+		width: 100%;
+
+		height: 80vh;
+
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+
+		margin: auto 1rem;
+
+		padding-bottom: 1rem;
+	}
+
 	.chatbox {
 		width: 100%;
 		height: 100%;
